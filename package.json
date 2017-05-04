@@ -1,0 +1,25 @@
+{
+  "name": "SiRu-device",
+  "version": "0.0.1",
+  "description": "SkyWay IoT SDK room utility for device",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": ""
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://ghe.nttcloud.net/SkyWay/SiRu-device.git"
+  },
+  "author": "NTT Communications Corp.",
+  "license": "MIT",
+  "dependencies": {
+    "events": "^1.1.0",
+    "log4js": "^1.1.1",
+    "node-fetch": "^1.6.3",
+    "rx": "^4.1.0",
+    "rxjs": "^5.3.1"
+  }
+}
