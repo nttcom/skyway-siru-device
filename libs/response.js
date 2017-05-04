@@ -4,8 +4,8 @@ const util = require('./util')
 
 class Response {
   /**
-   * 
-   * @param {object} param 
+   *
+   * @param {object} param
    * @param {object} parent  - skEmbed instance
    */
   constructor(param, parent) {
@@ -41,8 +41,8 @@ class Response {
 
 
   /**
-   * 
-   * @param {string|object} data 
+   *
+   * @param {string|object} data
    */
   send(data) {
     const norm_data = {

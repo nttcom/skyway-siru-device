@@ -25,9 +25,11 @@ util.timestamp = function() {
 }
 
 /**
- * 
- * @param {string} conf_path - /room/:name
- * @param {string} req_path - /room/chat
+ * check request path matches with configured path.
+ * if it matches, this func will return params object otherwise return false
+ *
+ * @param {string} conf_path - path configured ( e.g. `/room/:name` )
+ * @param {string} req_path  - request path    ( e.g. `/room/chat` #=> `{name: "chat"}` )
  */
 util.check_path = function(conf_path, req_path){
   const arrConf = conf_path.split("/")
@@ -43,17 +45,18 @@ util.check_path = function(conf_path, req_path){
     return false
   }
 
-  arrConf.forEach( (conf_chunk, i) => {
-    const req_chunk = arrReq[i]
-    
-    if(conf_chunk.indexOf(":") === 0 && conf_chunk.length > 1) {
-      const param = conf_chunk.slice(1)
-      ret[param] = req_chunk
-    } else if(conf_chunk.lengh > 0 && conf_chunk === req_chunk) {
+  for(var i = 0, len = arrConf.length; i < len; i++) {
+    var conf = arrConf[i], req = arrReq[i]
+
+    if(conf.indexOf(":") === 0 && conf.length > 1) {
+      const key = conf.slice(1)  // to obtain key name, we'll remove `:`
+      ret[key] = req
+    } else if( conf === req) {
     } else {
       return false
     }
-  })
+  }
+
   return ret
 }
 

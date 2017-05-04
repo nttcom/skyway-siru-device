@@ -1,28 +1,35 @@
-const skEmbed = require('../index.js')
+const SiRuDevice = require('../index.js')
 const Rx = require('rx')
 const os = require('os')
-const sk_embed = new skEmbed('testroom', {ssgaddress: '10.49.52.205'})
+const device = new SiRuDevice('testroom', {ssgaddress: 'localhost'})
 
-sk_embed.on('connect', () => {
-  sk_embed.subscribe('presence')
+device.on('connect', () => {
+  device.subscribe('presence')
 
-  sk_embed.on('message', (topic, mesg) => {
-    sk_embed.publish(topic, 'publish:'+mesg)
+  device.on('message', (topic, mesg) => {
+    device.publish(topic, 'publish:'+mesg)
   })
 
-  sk_embed.get('/echo', (req, res) => {
-    res.send(req.body)
-  })
-  sk_embed.get('/echo/:mesg', (req, res) => {
+  device.get('/echo/:mesg', (req, res) => {
     res.send(req.params.mesg)
   })
+
+
+  device.get('/take/photo', (req, res) => {
+    res.setStatus(404).send("???")
+  })
+
+  device.post('/take/photo', (req, res) => {
+    res.send(`[${Date.now()}] ok`)
+  })
+
   startSendMetrics()
   setTerminate()
 })
 
 function setTerminate() {
   process.on('SIGINT', () => {
-    sk_embed.leaveRoom()
+    device.leaveRoom()
       .then(() => process.exit())
   });
 }
@@ -47,7 +54,7 @@ function startSendMetrics() {
       })
 
       // publish usage of memory and cpu
-      sk_embed.publish('raspi205/memory', mem_usage )
-      sk_embed.publish('raspi205/cpu', cpu_usage )
+      device.publish('raspi205/memory', mem_usage )
+      device.publish('raspi205/cpu', cpu_usage )
    })
 }

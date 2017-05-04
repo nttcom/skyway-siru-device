@@ -1,3 +1,3 @@
-const skEmbed = require('./libs/SiRu-device')
+const SiRuDevice = require('./libs/SiRu-device')
 
-module.exports = skEmbed
+module.exports = SiRuDevice
