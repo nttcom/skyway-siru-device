@@ -1,7 +1,12 @@
 const SiRuDevice = require('../index.js')
 const Rx = require('rx')
 const os = require('os')
+const fs = require('fs')
 const device = new SiRuDevice('testroom', {ssgaddress: 'localhost'})
+
+const device_name = 'raspi205'
+
+const TEMP_FILE = '/sys/class/thermal/thermal_zone0/temp'
 
 device.on('connect', () => {
   device.subscribe('presence')
@@ -53,8 +58,22 @@ function startSendMetrics() {
         "15min": loadavg[2]
       })
 
+
+
       // publish usage of memory and cpu
-      device.publish('raspi205/memory', mem_usage )
-      device.publish('raspi205/cpu', cpu_usage )
+      device.publish( device_name + '/memory', mem_usage )
+      device.publish( device_name + '/cpu', cpu_usage )
+
+      // publish system temperature
+      fs.readFile(TEMP_FILE, (err, data) => {
+        if(err) {
+          console.warn(err.toString());
+        } else {
+          const temperature = JSON.stringify({
+            "cpu": parseInt(data) / 1000
+          })
+          device.publish( device_name + '/temperature', temperature );
+        }
+      })
    })
 }
