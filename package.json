@@ -17,6 +17,7 @@
   "license": "MIT",
   "dependencies": {
     "events": "^1.1.0",
+    "influx": "^5.0.0-alpha.4",
     "log4js": "^1.1.1",
     "node-fetch": "^1.6.3",
     "rx": "^4.1.0",

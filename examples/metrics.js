@@ -64,6 +64,9 @@ function startSendMetrics() {
       device.publish( device_name + '/memory', mem_usage )
       device.publish( device_name + '/cpu', cpu_usage )
 
+      storeBucket( device_name + '/memory'.replace('/', '_'), mem_usage)
+      storeBucket( device_name + '/cpu'.replace('/', '_'), cpu_usage)
+
       // publish system temperature
       fs.readFile(TEMP_FILE, (err, data) => {
         if(err) {
@@ -73,7 +76,53 @@ function startSendMetrics() {
             "cpu": parseInt(data) / 1000
           })
           device.publish( device_name + '/temperature', temperature );
+          storeBucket( device_name + '/temperature'.replace('/', '_'), temperature)
         }
       })
    })
 }
+
+
+const buckets = {}
+const INTERVAL = 60
+const FILENAME = 'metrics.csv'
+
+function storeBucket( topic, json_str ) {
+  try {
+    const json = JSON.parse(json_str)
+
+    if(!buckets[topic]) buckets[topic] = {} // initialize for the topic
+
+    const bucket = buckets[topic]
+
+    for(var key in json) {
+      if(!bucket[key]) bucket[key] = []  // initalize for the property
+      bucket[key].push(json[key])
+      if(bucket[key].length > INTERVAL) bucket[key].shift()
+    }
+  } catch(err) {
+    console.warn(err)
+  }
+}
+
+
+
+Rx.Observable.interval(INTERVAL * 1000)
+  .subscribe(() => {
+    const avg = {}
+
+    for(var key in buckets) {
+      var bucket = buckets[key]
+      avg[key] = {}
+      for(var prop in bucket) {
+        var len = bucket[prop].length
+        var sum = 0;
+        for( var i = 0; i < len; i++) sum = sum + bucket[prop][i]
+        var _avg = sum / len
+
+        avg[key][prop] = _avg
+      }
+    }
+    const out = `${Date.now()},${JSON.stringify(avg)}\n`
+    fs.writeFile(FILENAME, out, {flag:'a'})
+  })
