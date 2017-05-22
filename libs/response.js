@@ -45,17 +45,41 @@ class Response {
    * @param {string|object} data
    */
   send(data) {
-    const norm_data = {
-      topic: this.uuid,
-      payload: {
-        'status': this._status,
-        'method': this.method,
-        'transaction_id': this.transaction_id,
-        'body': data
+    const SIZE = 1000
+    const _data = JSON.stringify(data)
+
+    if(_data.length <= SIZE) {
+      const norm_data = {
+        topic: this.uuid,
+        payload: {
+          'status': this._status,
+          'method': this.method,
+          'transaction_id': this.transaction_id,
+          'body': data
+        }
       }
+      this.parent.send(this.handle_id, norm_data)
+    } else {
+      const chunks = _data.match(/.{1,1000}/g)
+      const chunk_len = chunks.length
+
+      chunks.forEach((chunk, idx) => {
+        const norm_data = {
+          topic: this.uuid,
+          payload: {
+            'status': this._status,
+            'method': this.method,
+            'transaction_id': this.transaction_id,
+            'chunked': true,
+            idx,
+            chunk_len,
+            chunk
+          }
+        }
+        this.parent.send(this.handle_id, norm_data)
+        access_log.info(this.logmesg(JSON.stringify(norm_data).length))
+      })
     }
-    this.parent.send(this.handle_id, norm_data)
-    access_log.info(this.logmesg(norm_data.payload.body.length))
   }
 
   logmesg(len) {

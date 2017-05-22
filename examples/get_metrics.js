@@ -2,16 +2,17 @@ const fs = require('fs')
 const readline = require('readline')
 const FILENAME = __dirname + '/metrics.csv'
 
-const file = fs.readFileSync(FILENAME)
 
 const hour = parseInt(process.argv[2]) || 1 // default is one hour
 
-const rs = fs.ReadStream(FILENAME)
 
 
 function getMetrics(hour) {
-  const _hour = parseInt(hour) || 1
+  const file = fs.readFileSync(FILENAME)
+  const rs = fs.ReadStream(FILENAME)
   const rl = readline.createInterface({'input': rs, 'output': {}});
+
+  const _hour = parseInt(hour) || 1
   const from = Date.now() - _hour * 3600 * 1000
   const ret = []
 
@@ -38,6 +39,3 @@ function getMetrics(hour) {
 }
 
 module.exports = getMetrics
-
-// test
-getMetrics().then(res => console.log(res))

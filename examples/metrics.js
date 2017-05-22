@@ -3,6 +3,7 @@ const Rx = require('rx')
 const os = require('os')
 const fs = require('fs')
 const device = new SiRuDevice('testroom', {ssgaddress: 'localhost'})
+const getMetrics = require('./get_metrics')
 
 const device_name = 'raspi205'
 
@@ -26,6 +27,22 @@ device.on('connect', () => {
 
   device.post('/take/photo', (req, res) => {
     res.send(`[${Date.now()}] ok`)
+  })
+
+  device.get('/length/:length', (req, res) => {
+    const len = parseInt(req.params.length)
+    res.send(new Array(len + 1).join("a"))
+  })
+
+  device.get('/metrics/:hour', (req, res) => {
+    getMetrics(req.params.hour)
+      .then(metrics => {
+        res.send(metrics)}
+      )
+      .catch(err => {
+        res.setStatus(403).send(err.toString())
+        console.warn(err)
+      })
   })
 
   startSendMetrics()
