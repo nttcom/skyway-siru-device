@@ -3,6 +3,10 @@
   "version": "0.0.1",
   "description": "SkyWay IoT SDK room utility for device",
   "main": "index.js",
+  "homepage": "https://github.com/nttcom/skyway-siru-device",
+  "bugs": {
+    "url": "https://github.com/nttcom/skyway-siru-device/issues"
+  },
   "directories": {
     "test": "test"
   },
@@ -11,10 +15,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://ghe.nttcloud.net/SkyWay/SiRu-device.git"
+    "url": "https://github.com/nttcom/skyway-siru-device.git"
   },
-  "author": "NTT Communications Corp.",
-  "license": "MIT",
+  "author": {
+    "name": "NTT Communications Corp.",
+    "url": "http://skyway.io/en"
+  },
+  "license": "Apache 2.0",
   "dependencies": {
     "events": "^1.1.0",
     "log4js": "^1.1.1",
