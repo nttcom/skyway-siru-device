@@ -1,5 +1,5 @@
 {
-  "name": "SiRu-device",
+  "name": "skyway-siru-device",
   "version": "0.0.1",
   "description": "SkyWay IoT SDK room utility for device",
   "main": "index.js",
@@ -21,7 +21,7 @@
     "name": "NTT Communications Corp.",
     "url": "http://skyway.io/en"
   },
-  "license": "Apache 2.0",
+  "license": "Apache-2.0",
   "dependencies": {
     "events": "^1.1.0",
     "js-yaml": "^3.8.4",
