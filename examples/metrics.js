@@ -9,35 +9,11 @@ const device = new SiRuDevice(conf.roomname, {ssgaddress: conf.ssgaddress})
 const getMetrics = require('./get_metrics')
 
 
-const device_name = 'raspi205'
+const device_name = 'your-device'
 
 const TEMP_FILE = '/sys/class/thermal/thermal_zone0/temp'
 
 device.on('connect', () => {
-  device.subscribe('presence')
-
-  device.on('message', (topic, mesg) => {
-    device.publish(topic, 'publish:'+mesg)
-  })
-
-  device.get('/echo/:mesg', (req, res) => {
-    res.send(req.params.mesg)
-  })
-
-
-  device.get('/take/photo', (req, res) => {
-    res.setStatus(404).send("???")
-  })
-
-  device.post('/take/photo', (req, res) => {
-    res.send(`[${Date.now()}] ok`)
-  })
-
-  device.get('/length/:length', (req, res) => {
-    const len = parseInt(req.params.length)
-    res.send(new Array(len + 1).join("a"))
-  })
-
   device.get('/metrics/:hour', (req, res) => {
     getMetrics(req.params.hour)
       .then(metrics => {
