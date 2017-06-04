@@ -1,9 +1,13 @@
 const SiRuDevice = require('../index.js')
-const Rx = require('rx')
-const os = require('os')
-const fs = require('fs')
-const device = new SiRuDevice('testroom', {ssgaddress: 'localhost'})
+const Rx   = require('rx')
+const os   = require('os')
+const fs   = require('fs')
+const yaml = require('js-yaml')
+
+const conf = yaml.safeLoad(fs.readFileSync(__dirname + '/metrics.yaml'))
+const device = new SiRuDevice(conf.roomname, {ssgaddress: conf.ssgaddress})
 const getMetrics = require('./get_metrics')
+
 
 const device_name = 'raspi205'
 

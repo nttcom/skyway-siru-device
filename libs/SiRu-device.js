@@ -135,7 +135,7 @@ class SiRuDevice extends EventEmitter {
         this.sendQueue.push(buf)
       })
 
-    const sendSubscriber = Rx.Observable.interval(10)
+    const sendSubscriber = Rx.Observable.interval(util.QUEUE_SEND_INTERVAL)
       .subscribe( () => {
         if(this.client.bufferSize !== 0) return
 

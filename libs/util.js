@@ -3,6 +3,8 @@ const logger = log4js.getLogger('util')
 
 const util = {}
 
+util.QUEUE_SEND_INTERVAL=50  // 50msec
+
 util.JOIN_ROOM = 'SSG:room/join'
 util.LEAVE_ROOM = 'SSG:room/leave'
 util.PROFILE_URL = (addr, port) => {
