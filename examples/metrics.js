@@ -9,7 +9,7 @@ const device = new SiRuDevice(conf.roomname, {ssgaddress: conf.ssgaddress})
 const getMetrics = require('./get_metrics')
 
 
-const device_name = 'your-device'
+const device_name = 'yourdevice'
 
 const TEMP_FILE = '/sys/class/thermal/thermal_zone0/temp'
 
