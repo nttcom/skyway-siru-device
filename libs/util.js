@@ -17,9 +17,17 @@ util.HANDLER =
 }
 
 util.STATUS = {
-  'IDLE': 0,
-  'CONNECTING' : 1,
-  'CONNECTED' : 2
+  'IDLE'        : 0,
+  'CONNECTING'  : 1,
+  'CONNECTED'   : 2,
+  'RECONNECTING': 3,
+  'RECONNECTED' : 4,
+  'CLOSED'      : 9
+}
+
+util.ROOMSTATUS = {
+  'JOINED': 0,
+  'LEAVED': 1
 }
 
 util.timestamp = function() {

@@ -25,6 +25,7 @@ class SiRuDevice extends EventEmitter {
     }
 
     this.room = room
+    this.roomStatus = util.ROOMSTATUS.LEAVED
     this.options = Object.assign({}, default_opt, options)
     this.profile = {}
     this.topics = []
@@ -32,13 +33,28 @@ class SiRuDevice extends EventEmitter {
     this.sendQueue = []
     this.callbacks = []
 
-    this.startConnection()
-      .then( () => this.setMesgHandler() )
-      .then( () => this.emitConnect() )
-      .then( () => this.getProfile() )
-      .then( () => this.emitMeta() )
-      .then( () => this.joinRoom() )
-      .catch(err => logger.warn(err))
+    this.observers = []
+
+    this.pow = 0
+    this._start();
+  }
+
+  _start() {
+    this.pow++
+    if(this.pow > 6) this.pow = 6
+
+    const interval = Math.pow(2, this.pow) * 1000
+    logger.debug(`_start: interval = ${interval}`)
+
+    setTimeout( () => {
+      this.startConnection()
+        .then( () => this.setMesgHandler() )
+        .then( () => this.emitConnect() )
+        .then( () => this.getProfile() )
+        .then( () => this.emitMeta() )
+        .then( () => this.joinRoom() )
+        .catch(err => logger.error(err))
+    }, interval)
   }
 
   /**
@@ -46,18 +62,62 @@ class SiRuDevice extends EventEmitter {
    */
   startConnection() {
     return new Promise((resolv, reject) => {
-      this.status = util.STATUS.CONNECTING
+      switch(this.status) {
+      case util.STATUS.IDLE:
+      case util.STATUS.CONNECTING:
+        this.status = util.STATUS.CONNECTING
+        break
+      case util.STATUS.RECONNECTING:
+        break
+      default:
+        reject(`startConnection: unexpected status (${this.status})`)
+        return
+      }
+
+      console.info(`connecting to SSG (status = ${this.status})`)
       this.client = new net.Socket()
 
       this.client.on('connect', () => {
-        this.status = util.STATUS.CONNECTED
+        this.pow = 0
+        switch(this.status) {
+        case util.STATUS.CONNECTING:
+          this.status = util.STATUS.CONNECTED
+          break;
+        case util.STATUS.RECONNECTING:
+          this.status = util.STATUS.RECONNECTED
+          break;
+        default:
+          reject(`onConnect: unexpected status (${this.status})`)
+          return;
+        }
+        logger.info(`socket connected. status = ${this.status}`)
         resolv();
       })
 
-      this.client.on('error', (err) =>{
-        if(this.status === util.STATUS.CONNECTING) reject(err)
-        this.status = util.STATUS.IDLE
+      // when tcp connection has closed
+      this.client.on('close', () => {
+        logger.warn(`socket closed. start reconnecting`)
+        if(this.status === util.STATUS.CONNECTING || this.status === util.STATUS.RECONNECTING ) {
+          // this is initial connecting, keep status as CONNECTING
+          reject(`onClose: status is ${this.status}`)
+          this._start();
+        } else if (this.status === util.STATUS.CONNECTED || util.STATUS.RECONNECTED) {
+          // this is restarting of SSG or so, change status to RECONNECTING
+          this.status = util.STATUS.RECONNECTING
+          this._start()
+        } else {
+          logger.warn(`onClose: unexpected status (${this.status})`);
+        }
       })
+
+      this.client.on('error', (err) =>{
+        if(this.status === util.STATUS.CONNECTING || this.status === util.STATUS.RECONNECTING) {
+          reject(err)
+        } else {
+          logger.error(`error in socket. status is (${this.status}).`)
+        }
+      })
+
       this.client.connect(this.options.extport, this.options.ssgaddress)
     })
   }
@@ -66,7 +126,15 @@ class SiRuDevice extends EventEmitter {
    *
    */
   setMesgHandler() {
-    // receiving data handler
+    // refresh existing observer
+    this.observers.forEach( observer => {
+      observer.dispose()
+    })
+    this.observers.length = 0
+
+    // transform binary data to json object.
+    // {handle_id, data}
+    // this also filter out when it does not have data.topic nor data.payload
     const receiveObserver = Rx.Observable.fromEvent(this.client, 'data')
       .filter(buf => buf.length > 8) // validate buffer length
       .map(buf => {
@@ -83,8 +151,10 @@ class SiRuDevice extends EventEmitter {
         return {handle_id, data}
       })
       .filter(obj => obj.data.topic && obj.data.payload)
+    // this.observers.push(receiveObserver)
 
-    const requestSuscriber = receiveObserver
+    // when receive data is for REST api
+    const requestSubscriber = receiveObserver
       .filter( obj => obj.data.topic === this.profile.uuid )
       .subscribe( obj => {
         try {
@@ -116,7 +186,9 @@ class SiRuDevice extends EventEmitter {
           logger.warn(err)
         }
       })
+    this.observers.push(requestSubscriber)
 
+    // when receved data is for pub/sub message
     const messageSubscriber = receiveObserver
       .filter( obj => {
         return this.topics.filter(t => t === obj.data.topic).length === 1
@@ -127,6 +199,7 @@ class SiRuDevice extends EventEmitter {
 
         this.emit('message', topic, payload)
       })
+    this.observers.push(messageSubscriber)
 
     // send queue
     const sendQueueSubscriber = Rx.Observable.fromEvent(this, 'inject/sendqueue')
@@ -134,6 +207,7 @@ class SiRuDevice extends EventEmitter {
         const buf = Buffer.concat([obj.handle_id, new Buffer(obj.data)])
         this.sendQueue.push(buf)
       })
+    this.observers.push(sendQueueSubscriber)
 
     const sendSubscriber = Rx.Observable.interval(util.QUEUE_SEND_INTERVAL)
       .subscribe( () => {
@@ -144,6 +218,7 @@ class SiRuDevice extends EventEmitter {
           this.client.write(buf)
         }
       })
+    this.observers.push(sendSubscriber)
   }
 
   /**
@@ -151,7 +226,18 @@ class SiRuDevice extends EventEmitter {
    */
   emitConnect() {
     return new Promise((resolv, reject) => {
-      this.emit('connect')
+      switch(this.status) {
+      case util.STATUS.CONNECTED:
+        this.emit('connect')
+        break
+      case util.STATUS.RECONNECTED:
+        this.emit('reconnect')
+        break;
+      default:
+        reject(`emitConnect: unexpected status (${this.status})`)
+        return;
+      }
+
       resolv()
     })
   }
@@ -162,12 +248,24 @@ class SiRuDevice extends EventEmitter {
   getProfile() {
     return new Promise((resolv, reject) => {
       const url = util.PROFILE_URL(this.options.ssgaddress, this.options.dashboardport)
-      fetch(url).then(res => res.json())
-        .then(json => {
-          this.profile = json
-          resolv()
-        })
-        .catch(err => reject(err))
+      logger.debug(`getProfile: ${url}`)
+
+      const _fetch = () => {
+        fetch(url).then(res => res.json())
+          .then(json => {
+            this.profile = json
+            logger.info('getProfile: obtaining profile succeeded.')
+            resolv()
+          })
+          .catch(err => {
+            logger.warn(err)
+            setTimeout(ev => {
+              logger.warn('getProfile: cannot fetch. try re-fetching...')
+              _fetch()
+            }, 1000)
+          })
+      }
+      _fetch()
     })
   }
 
@@ -206,18 +304,27 @@ class SiRuDevice extends EventEmitter {
 
 
   joinRoom() {
-    return new Promise((resolve, reject) => {
-      const mesg = `${util.JOIN_ROOM},${this.room}`
-      this.sendCtrlData(mesg)
+    if(this.roomStatus === util.ROOMSTATUS.LEAVED) {
+      return new Promise((resolve, reject) => {
+        const mesg = `${util.JOIN_ROOM},${this.room}`
+        this.sendCtrlData(mesg)
+        this.roomStatus === util.ROOMSTATUS.JOINED
 
-      resolve()
-    })
+        resolve()
+      })
+    } else if (this.roomStatus === util.ROOMSTATUS.JOINED) {
+      return new Promise((resolve, reject) => {
+        this.leaveRoom().then( () => this.joinRoom() )
+          .then( () => resolve() )
+      })
+    }
   }
 
   leaveRoom() {
     return new Promise((resolve, reject) => {
       const mesg = `${util.LEAVE_ROOM},${this.room}`
       this.sendCtrlData(mesg)
+      this.roomStatus === util.ROOMSTATUS.LEAVED
 
       Rx.Observable.timer(100).subscribe(resolve)
     })
