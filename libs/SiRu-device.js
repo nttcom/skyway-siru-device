@@ -52,7 +52,6 @@ class SiRuDevice extends EventEmitter {
         .then( () => this.emitConnect() )
         .then( () => this.getProfile() )
         .then( () => this.emitMeta() )
-        .then( () => this.joinRoom() )
         .catch(err => logger.error(err))
     }, interval)
   }
@@ -298,38 +297,6 @@ class SiRuDevice extends EventEmitter {
   delete(path, callback) {
     this.callbacks.push({method: 'delete', path, callback})
   }
-
-
-
-
-
-  joinRoom() {
-    if(this.roomStatus === util.ROOMSTATUS.LEAVED) {
-      return new Promise((resolve, reject) => {
-        const mesg = `${util.JOIN_ROOM},${this.room}`
-        this.sendCtrlData(mesg)
-        this.roomStatus === util.ROOMSTATUS.JOINED
-
-        resolve()
-      })
-    } else if (this.roomStatus === util.ROOMSTATUS.JOINED) {
-      return new Promise((resolve, reject) => {
-        this.leaveRoom().then( () => this.joinRoom() )
-          .then( () => resolve() )
-      })
-    }
-  }
-
-  leaveRoom() {
-    return new Promise((resolve, reject) => {
-      const mesg = `${util.LEAVE_ROOM},${this.room}`
-      this.sendCtrlData(mesg)
-      this.roomStatus === util.ROOMSTATUS.LEAVED
-
-      Rx.Observable.timer(100).subscribe(resolve)
-    })
-  }
-
 
   /**
    *
