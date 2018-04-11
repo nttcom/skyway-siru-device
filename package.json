@@ -1,6 +1,6 @@
 {
   "name": "skyway-siru-device",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "SkyWay IoT SDK room utility for device",
   "main": "index.js",
   "homepage": "https://github.com/nttcom/skyway-siru-device",
